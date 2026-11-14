@@ -1,0 +1,73 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          {{ app_name }}
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start {{ app_name }} at boot time
+### END INIT INFO
+
+SERVICE_NAME="{{ app_name }}"
+PATH_TO_JAR="{{ app_dir }}/{{ app_name }}.jar"
+PID_PATH_NAME="/var/run/{{ app_name }}.pid"
+USER_NAME="{{ app_user }}"
+APP_PORT="{{ app_port }}"
+APP_MESSAGE="{{ app_message }}"
+
+case $1 in
+    start)
+        echo "Starting $SERVICE_NAME ..."
+        if [ ! -f $PID_PATH_NAME ]; then
+            su -s /bin/sh $USER_NAME -c "nohup java -jar $PATH_TO_JAR --server.port=$APP_PORT --app.message=\"$APP_MESSAGE\" > {{ app_dir }}/app.log 2>&1 & echo \$! > $PID_PATH_NAME"
+            echo "$SERVICE_NAME started ..."
+        else
+            PID=$(cat $PID_PATH_NAME)
+            if kill -0 $PID 2>/dev/null; then
+                echo "$SERVICE_NAME is already running (PID: $PID) ..."
+            else
+                echo "$SERVICE_NAME PID file exists but process is dead. Restarting..."
+                rm -f $PID_PATH_NAME
+                su -s /bin/sh $USER_NAME -c "nohup java -jar $PATH_TO_JAR --server.port=$APP_PORT --app.message=\"$APP_MESSAGE\" > {{ app_dir }}/app.log 2>&1 & echo \$! > $PID_PATH_NAME"
+                echo "$SERVICE_NAME started ..."
+            fi
+        fi
+    ;;
+    stop)
+        if [ -f $PID_PATH_NAME ]; then
+            PID=$(cat $PID_PATH_NAME)
+            echo "Stopping $SERVICE_NAME (PID: $PID) ..."
+            kill $PID 2>/dev/null || true
+            sleep 2
+            kill -9 $PID 2>/dev/null || true
+            rm -f $PID_PATH_NAME
+            echo "$SERVICE_NAME stopped ..."
+        else
+            echo "$SERVICE_NAME is not running ..."
+        fi
+    ;;
+    restart)
+        $0 stop
+        sleep 2
+        $0 start
+    ;;
+    status)
+        if [ -f $PID_PATH_NAME ]; then
+            PID=$(cat $PID_PATH_NAME)
+            if kill -0 $PID 2>/dev/null; then
+                echo "$SERVICE_NAME is running with PID: $PID"
+                exit 0
+            else
+                echo "$SERVICE_NAME is stopped (dead PID file found)"
+                exit 1
+            fi
+        else
+            echo "$SERVICE_NAME is not running"
+            exit 3
+        fi
+    ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 1
+    ;;
+esac

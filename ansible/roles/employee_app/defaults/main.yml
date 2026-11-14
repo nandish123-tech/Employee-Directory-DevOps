@@ -1,0 +1,8 @@
+---
+# Default variables for employee_app role
+app_name: employee-directory
+app_port: 8080
+app_dir: /opt/employee-directory
+app_user: empapp
+java_package: openjdk-17-jre-headless
+app_message: "Hello from Employee Directory, deployed by Ansible"
