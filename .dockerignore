@@ -1,0 +1,13 @@
+target/
+.git/
+.mvn/
+mvnw
+mvnw.cmd
+.gitignore
+.github/
+Jenkinsfile
+ansible/
+k8s/
+README.md
+repo_link.txt
+*.log
