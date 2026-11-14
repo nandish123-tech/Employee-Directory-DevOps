@@ -1,0 +1,27 @@
+---
+- name: Configure and Deploy Employee Directory REST API
+  hosts: appservers
+  become: true
+
+  vars:
+    app_jar: "{{ playbook_dir }}/../target/employee-directory-1.0.0.jar"
+    app_message: "Hello from Employee Directory, deployed by Ansible"
+
+  roles:
+    - employee_app
+
+  post_tasks:
+    - name: Wait for the application to listen on {{ app_port }}
+      ansible.builtin.wait_for:
+        port: "{{ app_port }}"
+        timeout: 90
+
+    - name: Verify application endpoint responds
+      ansible.builtin.uri:
+        url: "http://localhost:{{ app_port }}/"
+        return_content: true
+      register: app_response
+
+    - name: Display deployed application info
+      ansible.builtin.debug:
+        msg: "{{ app_response.json }}"

@@ -1,0 +1,44 @@
+---
+# Tasks for employee_app role
+
+- name: Install Java 17 runtime
+  ansible.builtin.apt:
+    name: "{{ java_package }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Create non-root application user
+  ansible.builtin.user:
+    name: "{{ app_user }}"
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+
+- name: Create application deployment directory
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: "{{ app_user }}"
+    mode: "0755"
+
+- name: Copy built Spring Boot JAR to target server
+  ansible.builtin.copy:
+    src: "{{ app_jar }}"
+    dest: "{{ app_dir }}/{{ app_name }}.jar"
+    owner: "{{ app_user }}"
+    mode: "0644"
+  notify: Restart employee-directory
+
+- name: Install SysV init service script
+  ansible.builtin.template:
+    src: employee-directory.init.j2
+    dest: "/etc/init.d/{{ app_name }}"
+    mode: "0755"
+  notify: Restart employee-directory
+
+- name: Ensure Employee Directory service is started
+  ansible.builtin.service:
+    name: "{{ app_name }}"
+    state: started
+    use: sysvinit

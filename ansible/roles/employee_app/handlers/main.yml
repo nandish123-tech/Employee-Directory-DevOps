@@ -1,0 +1,7 @@
+---
+# Service restart handler - runs only when application JAR or service script changes
+- name: Restart employee-directory
+  ansible.builtin.service:
+    name: "{{ app_name }}"
+    state: restarted
+    use: sysvinit
